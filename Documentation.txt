@@ -1,0 +1,481 @@
+=================================================================================================
+DigitalClock.js:
+import Stopwatch from "./Stopwatch";
+import WorldClock from "./WorldClock";
+import { useState, useEffect } from "react";
+export default function DigitalClock()
+{
+	const [time, setTime] = useState(new Date());
+
+	useEffect(()=> {
+	
+		const timer = setInterval(() => {
+			setTime(new Date());
+		},1000);
+	return () => {
+		clearInterval(timer);
+		};
+	}, [] );
+
+	return(
+	
+	<>
+	<center>
+	<h1> Digital Clock App </h1>
+	<p>{ time.toLocaleTimeString() } </p>
+	</center>
+	</>
+	
+	
+	);
+};
+
+=================================================================================================
+
+WorldClock.js
+
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "./WorldClock.css";
+const WorldClock = () => {
+  const timezones = [
+    { name: "Kolkata", timezone: "Asia/Kolkata" },
+    { name: "New York", timezone: "America/New_York" },
+    { name: "Pakistan", timezone: "Asia/Karachi" },
+    { name: "China", timezone: "Asia/Shanghai" },
+    { name: "Africa", timezone: "Africa/Lagos" },
+    { name: "Dubai", timezone: "Asia/Dubai" }
+  ];
+
+  const [selectedTimezone, setSelectedTimezone] = useState("");
+  const [worldClocks, setWorldClocks] = useState([]);
+
+  const handleTimezoneChange = (event) => {
+    setSelectedTimezone(event.target.value);
+  };
+
+  const handleAddClock = () => {
+    if (selectedTimezone) {
+      setWorldClocks((prevClocks) => [
+        ...prevClocks,
+        {
+          timezone: selectedTimezone,
+          id: new Date().getTime()
+        }
+      ]);
+      setSelectedTimezone("");
+    }
+  };
+
+  const handleRemoveClock = (id) => {
+    setWorldClocks((prevClocks) =>
+      prevClocks.filter((clock) => clock.id !== id)
+    );
+  };
+
+  return (
+    <div className="world-clock-container">
+      <h1>World Clock</h1>
+      <select value={selectedTimezone} onChange={handleTimezoneChange}>
+  <option value="">Select a Time-Zone</option>
+  {timezones.map((timezone) => (
+    <option key={timezone.timezone} value={timezone.timezone}>
+      {timezone.name}
+    </option>
+  ))}
+</select>
+
+      <button onClick={handleAddClock}>Add Clock</button>
+      <div className="world-clock-grid">
+        {worldClocks.map((clock) => (
+          <WorldClockDisplay
+            key={clock.id}
+            timezone={clock.timezone}
+            onRemove={() => handleRemoveClock(clock.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const WorldClockDisplay = ({ timezone, onRemove }) => {
+  const [time, setTime] = useState(null);
+  const [date, setDate] = useState(null);
+  const [day, setDay] = useState(null);
+
+  useEffect(() => {
+    const fetchTime = async () => {
+      try {
+        const response = await axios.get(
+          `https://worldtimeapi.org/api/timezone/${timezone}`
+        );
+        const { datetime, day_of_week } = response.data;
+        const [dateString, timeString] = datetime.split("T");
+        const [year, month, day] = dateString.split("-");
+        const [time, _] = timeString.split(".");
+        const formattedTime = time.slice(0, 8);
+        const formattedDate = `${day}/${month}/${year}`;
+        const formattedDay = dayOfWeekToText(day_of_week);
+        setTime(formattedTime);
+        setDate(formattedDate);
+        setDay(formattedDay);
+      } catch (error) {
+        console.error("Error: ", error);
+      }
+    };
+
+    fetchTime();
+
+    const intervalId = setInterval(fetchTime, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [timezone]);
+
+  const dayOfWeekToText = (dayOfWeek) => {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    return days[dayOfWeek];
+  };
+return (
+  <div className="world-clock-tile">
+    <h2>{timezone}</h2>
+    {time && date && day ? (
+      <div>
+        <p className="clock-time">Time: {time}</p>
+        <p className="clock-date">Date: {date}</p>
+        <p className="clock-day">Day: {day}</p>
+      </div>
+    ) : (
+      <p>Fetching time for you, please wait...</p>
+    )}
+    <button className="remove-button" onClick={onRemove}>
+      Remove
+    </button>
+  </div>
+);
+
+};
+
+export default WorldClock;
+=================================================================================================
+
+#Stopwatch.js#
+
+import { useState, useEffect } from "react";
+
+const Stopwatch = () => {
+
+	const [ running, setRunning ] = useState(false);
+	const [ time, setTime ] = useState(0);
+
+	useEffect( () => {
+		
+		let intervalId;
+		if (running) 
+		{
+			intervalId = setInterval(() => {
+				setTime((prevTime) => prevTime + 1);
+				}, 1000);
+		}
+		
+
+			return () => {
+				clearInterval(intervalId);
+			};
+		}, [running] );
+
+	const handleStartStop = () => {
+		setRunning(!running);
+	};
+	
+	const handleReset = () => {
+	setTime(0);
+	setRunning(false);
+	};
+
+	return (
+		
+		<>
+		<center>
+		<h2> Stop Watch </h2>
+		<p> {time} seconds </p>
+		<button onClick={handleStartStop}>{running ? 'Stop' : 'Start'}</button>
+		<button onClick={handleReset}>Reset</button>
+		</center>
+		</>
+
+	);
+};
+
+export default Stopwatch;
+
+=================================================================================================
+
+#Countdown.js#
+
+import { useState, useEffect } from "react";
+
+const Countdown = () => {
+  const [targetDate, setTargetDate] = useState("");
+  const [remainingTime, setRemainingTime] = useState("Please enter the target date and time");
+
+  const handleTargetDateChange = (event) => {
+    setTargetDate(event.target.value);
+  };
+
+  useEffect(() => {
+    const calculateRemainingTime = () => {
+      const currentTime = new Date().getTime();
+      const difference = new Date(targetDate) - currentTime;
+
+      if (isNaN(new Date(targetDate))) {
+        setRemainingTime("Please enter a valid target date and time");
+      } else if (difference <= 0) {
+        
+        setRemainingTime("Countdown complete!");
+      } else {
+        const seconds = Math.floor((difference / 1000) % 60);
+        const minutes = Math.floor((difference / 1000 / 60) % 60);
+        const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+
+        setRemainingTime(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      }
+    };
+
+
+    const intervalId = setInterval(calculateRemainingTime, 1000);
+
+
+    return () => clearInterval(intervalId);
+  }, [targetDate]);
+
+  return (
+	<>
+	<center>
+	<h3>Countdown</h3>
+	<input type="datetime-local" value={targetDate} onChange={handleTargetDateChange} />
+	<p>{remainingTime}</p>
+	</center>
+	</>
+  );
+};
+
+export default Countdown;
+
+=================================================================================================
+
+#Alarm.js#
+
+import React, { useState, useEffect } from "react";
+
+const Alarm = () => {
+  const [alarmTime, setAlarmTime] = useState("");
+  const [isAlarmSet, setIsAlarmSet] = useState(false);
+
+  const handleAlarmTimeChange = (event) => {
+    setAlarmTime(event.target.value);
+  };
+
+  const handleSetAlarm = () => {
+    setIsAlarmSet(true);
+  };
+
+  const handleResetAlarm = () => {
+    setIsAlarmSet(false);
+  };
+
+  useEffect(() => {
+    const checkAlarm = () => {
+      const currentTime = new Date();
+      const currentHours = currentTime.getHours();
+      const currentMinutes = currentTime.getMinutes();
+
+      const [alarmHours, alarmMinutes] = alarmTime.split(":");
+      const parsedAlarmHours = parseInt(alarmHours, 10);
+      const parsedAlarmMinutes = parseInt(alarmMinutes, 10);
+
+      if (
+        isAlarmSet &&
+        currentHours === parsedAlarmHours &&
+        currentMinutes === parsedAlarmMinutes
+      ) {
+        alert("Alarm is ringing!");
+        setIsAlarmSet(false);
+      }
+    };
+
+    const intervalId = setInterval(checkAlarm, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [isAlarmSet, alarmTime]);
+
+  return (
+	<>
+	<center>
+	<h3>Set Alarm</h3>
+	<input type="time" value={alarmTime} onChange={handleAlarmTimeChange} />
+	<button onClick={handleSetAlarm}>Set</button>
+	<button onClick={handleResetAlarm}>Reset</button>
+	</center>
+	</>
+  );
+};
+
+export default Alarm;
+
+
+=================================================================================================
+#App.css#
+
+*
+{font-size:25px;}
+
+body
+{background-color:pink}
+
+.nav 
+{background-color:black;font-size:30px;}
+
+.nav a
+{color:white; text-decoration: None; margin: 5%; font-size:20px; transition: color 0.3s ease, font-size 0.3s ease}
+
+.nav a:hover
+{color:red; text-decoration:None;margin:5%;font-size:25px;}
+
+==============================================================================================================
+#WorldClock.css#
+
+
+.world-clock-container {
+  text-align: center;
+}
+
+.world-clock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.world-clock-tile {
+  border: 1px solid #ccc;
+  padding: 20px;
+  text-align: center;
+}
+
+.world-clock-tile h2 {
+  margin-bottom: 10px;
+}
+
+.world-clock-tile p {
+  margin: 5px 0;
+	font-size:20px;
+}
+
+.world-clock-tile button {
+  margin-top: 10px;
+}
+
+=================================================================================================
+#index.css#
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+=================================================================================================
+
+#Navbar.js#
+
+import { Link } from "react-router-dom";
+
+export default function Navbar()
+{
+	return(
+	<>
+	<center>
+		<div className="nav">
+			<Link to="/"> Home </Link>
+			<Link to="/WorldClock"> World Clock </Link>
+			<Link to="/Stopwatch"> Stopwatch </Link>	
+			<Link to="/Alarm"> Alarm </Link>
+			<Link to="/Countdown"> Countdown </Link>
+	</div>
+	</center>
+	</>
+	);
+}
+
+=================================================================================================
+
+
+#index.js#
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+
+=================================================================================================
+
+#App.js#
+
+import logo from './logo.svg';
+import './App.css';
+import DigitalClock from "./DigitalClock";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import WorldClock from "./WorldClock";
+import Stopwatch from "./Stopwatch";
+import Navbar from "./Navbar";
+import Alarm from "./Alarm";
+import Countdown from "./Countdown";
+
+function App() {
+  return (
+    <div className="App">
+	<BrowserRouter>
+		<Navbar/>
+		<Routes>
+			<Route path="/" element={<DigitalClock/>}/>
+			<Route path="/WorldClock" element={<WorldClock/>}/>
+			<Route path="/Stopwatch" element={<Stopwatch/>}/>
+			<Route path="/Alarm" element={<Alarm/>}/>
+			<Route path="/Countdown" element={<Countdown/>}/>
+			<Route path="*" element={<DigitalClock/>}/>
+		</Routes>
+    	</BrowserRouter>
+	</div>
+  );
+}
+
+export default App;
+
+=================================================================================================
+

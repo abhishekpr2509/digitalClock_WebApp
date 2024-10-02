@@ -1,0 +1,28 @@
+.world-clock-container {
+  text-align: center;
+}
+
+.world-clock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.world-clock-tile {
+  border: 1px solid #ccc;
+  padding: 20px;
+  text-align: center;
+}
+
+.world-clock-tile h2 {
+  margin-bottom: 10px;
+}
+
+.world-clock-tile p {
+  margin: 5px 0;
+	font-size:20px;
+}
+
+.world-clock-tile button {
+  margin-top: 10px;
+}
